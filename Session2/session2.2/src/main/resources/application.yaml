@@ -1,0 +1,9 @@
+
+# it is used to log the sql on console.
+logging:
+  level:
+    sql: debug
+
+
+
+

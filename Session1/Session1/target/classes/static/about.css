@@ -1,0 +1,57 @@
+/* General styling */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Ensure the body takes up at least the full viewport height */
+}
+
+header {
+  background-color: #ff6600;
+  color: #fff;
+  padding: 20px;
+  text-align: center;
+}
+
+.about-content {
+  background-color: #fff;
+  padding: 20px;
+  margin: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+  flex: 1; /* Make this section take up remaining space */
+}
+
+footer {
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+}
+
+/* Style the button */
+.my-button {
+  background-color: #333; /* Green background color */
+  border: none; /* Remove border */
+  color: white; /* Text color */
+  padding: 10px 20px; /* Padding for the button text */
+  text-align: center; /* Center the text horizontally */
+  text-decoration: none; /* Remove underlining of text */
+  display: inline-block; /* Display as inline-block to size based on content */
+  font-size: 16px; /* Font size */
+  margin: 10px; /* Margin around the button */
+  cursor: pointer; /* Show a hand cursor on hover */
+  border-radius: 5px; /* Rounded corners */
+  transition: background-color 0.3s, color 0.3s; /* Add a smooth transition effect */
+}
+
+/* Change button style on hover */
+.my-button:hover {
+  background-color: #6b6464; /* Darker green color on hover */
+  color: #fff; /* Text color on hover */
+}
+
+

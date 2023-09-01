@@ -1,0 +1,125 @@
+1) Add Spring Security and add two dependencies
+2) Three functions to fetch username
+3) login from database
+4) ignoring endpoints with /config/WebSecurityConfiguration and two methods of @Bean to ignore security authentication on specific end points.
+5) unit testing with mock user on authenticated endpoints and csrf (token) is enabled by default. We have to disable it in WebSecurityConfiguration.
+
+mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/news")
+						.with(SecurityMockMvcRequestPostProcessors.user("reporter"))
+or
+
+@WithMockUser(username = "reporter") //, roles = {"ROLE_USER"}) // Set up a mock user
+
+6) Disabling csrf is not a solution to go with, so what we gotta do is we have to enable it and we have to mock it.
+
+7) Authorization (Method level security)
+-> In WebSecurityConfiguration add annotation @EnableMethodSecurity
+-> Now in NewsController you have to give @PreAuthorize("hasAuthority('REPORTER') or asAuthority('EDITOR')") to insert, update and delete.
+-> mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/news")
+						.with(SecurityMockMvcRequestPostProcessors.user("reporter").authorities(new SimpleGrantedAuthority("REPORTER")))
+
+8) Log Forgery is prevented in NewsService.
+9) (i) auto increment using IDENTITY (index)
+->  @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
+->  in schema.yaml:
+
+    databaseChangeLog:
+      - changeSet:
+          id: schema-0.0.1
+          author: news team
+          changes:
+            - createTable:
+                tableName: news
+                columns:
+                  - column:
+                      name: id
+                      type: bigint
+                      autoIncrement: true             //add this
+                      constraints:
+                        nullable: false
+                  - column:
+                      name: title
+                      type: varchar(255)
+                  - column:
+                      name: details
+                      type: varchar(1000)
+                  - column:
+                      name: tags
+                      type: varchar(255)
+                  - column:
+                      name: reported_time
+                      type: DATETIME
+            - addPrimaryKey:
+                tableName: news
+                columnNames: id
+                constraintName: news_pk
+            - createIndex:
+                tableName: news
+                indexName: news_ix_01
+                columns:
+                  - column:
+                      name: title
+      - changeSet:                                             //write this.
+          id: alter-table-auto-increment
+          author: news team
+          changes:
+            - sql:
+                sql: ALTER TABLE news ALTER COLUMN id RESTART WITH 3;
+
+9) (ii) auto increment using sequence
+
+->  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "news_sequence")
+    @SequenceGenerator(name = "news_sequence", sequenceName = "news_sequence", allocationSize = 1)
+    @Id
+    private long id;
+
+-> In schema.yaml
+databaseChangeLog:
+    - changeSet:
+        id: create-sequence
+        author: news team
+        changes:
+          - sql:
+              sql: CREATE SEQUENCE news_sequence START WITH 3;
+              # because two records were already given hard coded.
+    - changeSet:
+        id: schema-0.0.1
+        author: news team
+        changes:
+          - createTable:
+              tableName: news
+              columns:
+                - column:
+                    name: id
+                    type: bigint
+                    defaultValueComputed: "NEXT VALUE FOR news_sequence"
+                    constraints:
+                      nullable: false
+                - column:
+                    name: title
+                    type: varchar(255)
+                - column:
+                    name: details
+                    type: varchar(1000)
+                - column:
+                    name: tags
+                    type: varchar(255)
+                - column:
+                    name: reported_time
+                    type: DATETIME
+          - addPrimaryKey:
+              tableName: news
+              columnNames: id
+              constraintName: news_pk
+          - createIndex:
+              tableName: news
+              indexName: news_ix_01
+              columns:
+                - column:
+                    name: title
+
+
+

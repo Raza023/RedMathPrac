@@ -1,0 +1,22 @@
+
+# it is used to log the sql on console.
+logging:
+  level:
+    sql: debug
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+  mvc:
+    throw-exception-if-no-handler-found: true
+    resources:
+      add-mappings: false
+#  datasource:
+#    initialization-mode: always
+#    data: classpath:data3.sql
+#    schema: classpath:schema3.sql
+
+h2:
+  console:
+    enabled: true

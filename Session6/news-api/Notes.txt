@@ -1,0 +1,5 @@
+set PATH=%PATH%;D:\Softwares\node-v18.17.1-win-x64
+
+set PATH=D:\Softwares\node-v18.17.1-win-x64;%PATH%
+
+RUN THIS COMMAND TO SET ENVIRONMENT.

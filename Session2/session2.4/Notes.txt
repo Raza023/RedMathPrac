@@ -1,0 +1,1 @@
+Created a simple api to get a simple message.

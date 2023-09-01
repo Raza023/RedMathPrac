@@ -1,0 +1,8 @@
+1) Logger
+2) search by title
+3) @Query("SELECT n FROM News n WHERE n.title LIKE %:s%")  implementation
+4) @Value
+5) resources/logback-spring.xml  //for quite complex logging   //https://logback.qos.ch/manual/configuration.html
+6) resources/application-dev.yaml                //include it in application.yaml (for _ use _ and for . use . in both files)
+7) remove warn
+8) Unit testing (TDD)

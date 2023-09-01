@@ -1,0 +1,10 @@
+First session
+
+git remote add origin https://github.com/Raza023/RedMathPrac.git
+git branch -M main
+git push -u origin main
+
+create token for it:
+https://chat.openai.com/share/a643a5e5-052f-4b97-9ac8-0d346a5ccf79
+
+my token: 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

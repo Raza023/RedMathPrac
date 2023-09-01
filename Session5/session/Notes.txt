@@ -1,0 +1,273 @@
+----------Quality Assurance --------------------
+
+
+1) Clean code (Quality code)
+
+Add two plugins for it.
+i) checkstyle:
+    code formatting (proper and consistent indentation), invalid statement
+ii) pmd:
+    Identifies basic bugs and report it.
+iii)spotbugs maven plugin:
+    Identify bugs(sql injection, security related bugs)
+
+                <plugin>
+    				<groupId>org.apache.maven.plugins</groupId>
+    				<artifactId>maven-checkstyle-plugin</artifactId>
+    				<version>3.3.0</version>
+    				<executions>
+    					<execution>
+    						<id>default-cli</id>
+    						<goals>
+    							<goal>check</goal>
+    						</goals>
+    						<phase>validate</phase>
+    					</execution>
+    				</executions>
+    				<configuration>
+    					<configLocation>google_checks.xml</configLocation>
+    				</configuration>
+    			</plugin>
+    			<plugin>
+    				<groupId>org.apache.maven.plugins</groupId>
+    				<artifactId>maven-pmd-plugin</artifactId>
+    				<version>3.21.0</version>
+    				<executions>
+    					<execution>
+    						<id>default-cli</id>
+    						<goals>
+    							<goal>check</goal>
+    						</goals>
+    						<phase>validate</phase>
+    					</execution>
+    				</executions>
+    			</plugin>
+    			<plugin>
+    				<groupId>com.github.spotbugs</groupId>
+    				<artifactId>spotbugs-maven-plugin</artifactId>
+    				<version>4.0.4</version>
+    				<executions>
+    					<execution>
+    						<id>default-cli</id>
+    						<goals>
+    							<goal>check</goal>
+    						</goals>
+    						<phase>verify</phase>
+    					</execution>
+    				</executions>
+    				<configuration>
+    					<effort>Max</effort>
+    					<threshold>Normal</threshold>
+    					<failOnError>true</failOnError>
+    					<plugins>
+    						<plugin>
+    							<groupId>com.h3xstream.findsecbugs</groupId>
+    							<artifactId>findsecbugs-plugin</artifactId>
+    							<version>LATEST</version>
+    						</plugin>
+    					</plugins>
+    				</configuration>
+    			</plugin>
+
+
+2) JUnit: Unit test controller with spring boot starter test & security  (go through testing file.)
+
+3) REST API: Swagger based rest endpoint specifications
+https://springdoc.org/#getting-started
+https://www.baeldung.com/spring-rest-openapi-documentation
+https://chat.openai.com/share/f518cd0c-84b7-4f72-8695-f6bc474278a5   (for the implementation of csrf for swagger insert,update and delete)
+
+        <dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.2.0</version>
+		</dependency>
+
+
+4) Production: monitoring / actuator
+
+        <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+create dashboard for monitoring on (grafana.com)  (video tutorial: https://youtu.be/gJZhdEJvZmc?si=J97g47DhOpLg3Z4a)
+
+5) System testing: Overview of BDD, cucumber-jvm
+
+
+6) JDBC Template   (alternative of repository, you can use it if you don't wanna use repository. )
+see HomeController and UserService for the implementation of JDBC template.
+
+7) @EnableCaching @Cacheable   (when a special request is being done again and again.)
+
+Step 1)
+@Cacheable("userNameCache") // Define a cache named "userNameCache"
+public User findByUserName(String userName) {
+    String sql = "SELECT * FROM users WHERE user_name = ?";
+    return jdbcTemp.queryForObject(sql, new Object[]{userName}, new BeanPropertyRowMapper<>(User.class));
+}
+
+Step 2)
+In config> make a class CacheConfiguration
+(alternative is just paste this line in application.properties:   spring.cache.caffeine.spec=maximumSize=100,expireAfterWrite=10m)
+
+@Configuration
+@EnableCaching
+public class CacheConfiguration {
+    @Bean
+    public CacheManager cacheManager() {
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        cacheManager.setCaffeine(Caffeine.newBuilder()
+                .maximumSize(100) // Set the maximum cache size
+                .expireAfterWrite(10, TimeUnit.MINUTES) // Set the cache entry expiration time
+                .recordStats()); // Enable cache statistics (optional)
+        return cacheManager;
+    }
+}
+
+Step 3)
+Add dependency of caffeine
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-cache</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.github.ben-manes.caffeine</groupId>
+    <artifactId>caffeine</artifactId>
+</dependency>
+
+Step 4)
+In application.yaml
+spring:
+  cache:
+    type: caffeine
+
+
+8) EnableAsync
+
+step 1) In pom.xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+step 2)
+@SpringBootApplication
+@EnableAsync
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(YourApplication.class, args);
+    }
+}
+
+step 3)  make db call, send Email and any other func in service Async to make the execution of these functions async.
+@Service
+public class YourService {
+    @Async
+    public void performAsyncTask() {
+        // Your asynchronous task logic here
+    }
+}
+
+9) @EnableScheduling
+
+step 1) In pom.xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+
+step 2)
+@SpringBootApplication
+@EnableScheduling
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(YourApplication.class, args);
+    }
+}
+
+step 3)
+1. fixedRate Attribute:
+
+@Component
+public class FixedRateTask {
+    @Scheduled(fixedRate = 5000) // Execute every 5 seconds
+    public void performFixedRateTask() {
+        // Your task logic here
+    }
+}
+
+2. fixedDelay Attribute:
+
+@Component
+public class FixedDelayTask {
+    @Scheduled(fixedDelay = 10000) // Execute after a delay of 10 seconds
+    public void performFixedDelayTask() {
+        // Your task logic here
+    }
+}
+
+3. initialDelay Attribute:
+
+@Component
+public class InitialDelayTask {
+    @Scheduled(initialDelay = 30000, fixedRate = 60000) // Start after 30 seconds, then execute every 60 seconds
+    public void performInitialDelayTask() {
+        // Your task logic here
+    }
+}
+
+4. cron Expression:   visit this website to make cron: http://www.cronmaker.com/
+
+@Component
+public class CronTask {
+    @Scheduled(cron = "0 0 12 * * ?") // Execute at 12:00 PM every day
+    public void performCronTask() {
+        // Your task logic here
+    }
+}
+
+10) Authenticated user data.
+
+@GetMapping
+public ResponseEntity<Map<String, String>> simpleMapingFunctionThatReturnsText(){
+    User user = userService.findByUserName("reporter");
+    String role = user.getRoles();
+
+    // Retrieve the current Authentication object
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String AuthUserName = "";
+    if (auth != null) {
+        AuthUserName =  auth.getName();
+    } else {
+        // Handle the case when there is no authentication
+        AuthUserName =  "Anonymous";
+    }
+    return ResponseEntity.ok(Map.of("message","Current time is: "+ LocalDateTime.now() +
+            ". Role of my user is: " + role + ". Authenticated user name is: "+ AuthUserName));
+}
+
+11) csrf token request:
+
+@Bean
+public WebSecurityCustomizer webSecurityCustomizer()
+{
+    return web -> web.ignoring().requestMatchers(new AntPathRequestMatcher("/api/v1/news", "GET"))
+            .requestMatchers(new AntPathRequestMatcher("/api/v1/news/**", "GET"))
+            .requestMatchers(new AntPathRequestMatcher("/actuator", "GET"))
+            .requestMatchers(new AntPathRequestMatcher("/actuator/**", "GET"));
+}
+
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+    http.formLogin(Customizer.withDefaults());
+    http.authorizeHttpRequests(config -> config.anyRequest().authenticated());
+    //http.csrf(config -> config.disable());                                                          //we don't have to disable it.
+    http.csrf(config -> config.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));   //now it will handle the csrf token request without any problem.
+    return http.build();
+}
