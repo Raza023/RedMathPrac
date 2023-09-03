@@ -1,0 +1,137 @@
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>runtime</scope>
+    <!-- <optional>true</optional> -->
+    <!-- true because we want it only in dev phase not in production. We can add sql connector as well.-->
+</dependency>
+
+--------------------------------------1) ApiResponse for pagging-------------------------------------
+
+---------------basic>ApiResponse--------------------
+package com.practice.session2.basic;
+
+public class ApiResponse<T> {
+
+    private final T content;
+
+    public ApiResponse(T content) {
+        this.content = content;
+    }
+
+    public T getContent() {
+        return content;
+    }
+
+    public static <T> ApiResponse<T> of(T content) {
+        return new ApiResponse<T>(content);
+    }
+}
+
+------------------NewsController---------------------
+    @GetMapping("/search") // Get news records by title
+    public ResponseEntity<ApiResponse<List<News>>> findByTitleLike(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "100") int size,
+            @RequestParam(name = "search", defaultValue = "") String title) {
+        List<News> newsList = newsService.findByTitleLike(page, size, title);
+
+//        if (newsList.isEmpty()) {   //no need to do this.
+//            return ResponseEntity.notFound().build();
+//        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+        // Your response logic here
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(ApiResponse.of(newsList));  //we don't have to do any mapping for it.
+
+//        return ResponseEntity.ok(Map.of("content",newsList));
+    }
+----------------------NewsService------------------------
+    //page(0,      1,      2,     3,..........)
+    //size(001-100,101-200,201-300,...........)
+
+    @Value("${news.page.min:0}")
+    public int pageMin = 0;
+
+    @Value("${news.page.size.min:1}")
+    public int pageSizeMin = 1;
+
+    @Value("${news.page.size.max:100}")
+    public int pageSizeMax = 100;
+
+
+    public List<News> findByTitleLike(int page,int size,String title) {
+        logger.info("Our operator is: "+sqlLike);
+        logger.info("Title: "+title.replace("[\r\n]",""));    //log forgery.
+
+        if (page < pageMin) {
+            page = pageMin;
+        }
+        if (size > pageSizeMax) {
+            size = pageSizeMax;
+        } else if (size < pageSizeMin) {
+            size = pageSizeMin;
+        }
+
+        List<News> newsList = newsRepository.findByTitleLike(sqlLike + title + sqlLike);
+
+        Pageable pageable = PageRequest.of(page, size);
+        if (title.isEmpty() || title.isBlank()) {
+            newsList = newsRepository.findByOrderByIdDesc(pageable).getContent();
+            return newsList;
+        }
+        newsList = newsRepository.findByTitleLikeOrderByIdDesc(pageable, sqlLike + title + sqlLike).getContent();
+
+        return newsList; // If no matches are found, this will return an empty list
+    }
+
+---------------------------NewsRepository-----------------------
+    Page<News> findByOrderByIdDesc(Pageable pageable);
+
+    Page<News> findByTitleLikeOrderByIdDesc(Pageable pageable, String title);
+
+
+--------------------------Context------------------------------
+1) In db.changelog-master.yaml
+specify (context: local)
+
+databaseChangeLog:
+- include:
+    file: db.changelog-schema-0.0.1.yaml
+    relativeToChangelogFile: true
+- include:
+    file: db.changelog-data-0.0.1.yaml
+    relativeToChangelogFile: true
+    context: local
+- include:
+    file: db.changelog-schema-0.0.2.yaml
+    relativeToChangelogFile: true
+- include:
+    file: db.changelog-data-0.0.2.yaml
+    relativeToChangelogFile: true
+    context: local
+- include:
+    file: db.changelog-data-0.0.3.yaml
+    relativeToChangelogFile: true
+    context: local
+
+2) In application.yaml:
+spring:
+  liquibase:
+    contexts: ${news.liquibase.contexts:}
+spring.profiles.include: local
+
+3) In application-local.yaml
+news:
+  liquibase:
+    contexts: local
+
+--------------------change context of app to access data.--------------------
+server:
+  port: 9080
+  servlet:
+    context-path: /news

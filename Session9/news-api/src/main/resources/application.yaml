@@ -1,0 +1,69 @@
+
+# it is used to log the sql on console.
+logging:
+#  pattern:
+#    level: "%5P ${HOSTNAME}"
+#    console:
+  file:
+    name: target/news.log
+  level:
+    sql: debug
+    web: debug
+    '[com.practice.session2]': DEBUG
+
+spring:
+  sql:
+    like:
+      operator: '%'
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  mvc:
+    throw-exception-if-no-handler-found: true
+    resources:
+      add-mappings: false
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: ${news.db.url}
+    user: ${news.db.user}
+    password: ${news.db.password}
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=5000,expireAfterAccess=300s
+#    url: ${NEWS_DB_URL}
+#    user: ${NEWS_DB_USER}
+#    password: ${NEWS_DB_PASSWORD}
+#  security:
+#    user:
+#      name: admin
+#      password: admin
+#      roles: admin
+
+#  datasource:
+#    initialization-mode: always
+#    data: classpath:data3.sql
+#    schema: classpath:schema3.sql
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+#      show-details: when-authorized
+
+generator:
+  strategy: sequence
+
+server:
+  port: 9080
+#  servlet:
+#    context-path: /news
+
+spring.profiles.include: dev, local
