@@ -17,7 +17,7 @@ databaseChangeLog:
                   value: '{noop}reporter'
               - column:
                   name: roles
-                  value: REPORTER
+                  value: REPORTER,ACTUATOR
               - column:
                   name: status
                   value: ACTIVE

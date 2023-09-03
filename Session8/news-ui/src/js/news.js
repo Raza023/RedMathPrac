@@ -22,7 +22,7 @@
         var self = this;
 
         self.service = newsService;
-        self.accounts = [];
+        self.news = [];
         self.title = '';
         self.display = false;            //for performance improvement.
 

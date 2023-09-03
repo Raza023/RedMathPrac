@@ -1,5 +1,6 @@
 package com.practice.session2.News;
 
+import com.practice.session2.basic.ApiResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,8 +37,11 @@ public class NewsController {
     }
 
     @GetMapping("/search") // Get news records by title
-    public ResponseEntity<Map<String,List<News>>> findByTitleLike(@RequestParam(name = "search") String title) {
-        List<News> newsList = newsService.findByTitleLike(title);
+    public ResponseEntity<ApiResponse<List<News>>> findByTitleLike(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "100") int size,
+            @RequestParam(name = "search", defaultValue = "") String title) {
+        List<News> newsList = newsService.findByTitleLike(page, size, title);
 
 //        if (newsList.isEmpty()) {   //no need to do this.
 //            return ResponseEntity.notFound().build();
@@ -49,7 +53,7 @@ public class NewsController {
         // Your response logic here
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(Map.of("content",newsList));
+                .body(ApiResponse.of(newsList));  //we don't have to do any mapping for it.
 
 //        return ResponseEntity.ok(Map.of("content",newsList));
     }

@@ -4,6 +4,8 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,24 +21,19 @@ public class NewsService {
 
     Logger logger = LoggerFactory.getLogger(getClass());
 
+    @Value("${news.page.min:0}")
+    public int pageMin = 0;
+
+    @Value("${news.page.size.min:1}")
+    public int pageSizeMin = 1;
+
+    @Value("${news.page.size.max:100}")
+    public int pageSizeMax = 100;
+
     public NewsService(NewsRepository newsRepository) {
         this.newsRepository = newsRepository;
-//        this.createTestData();
     }
 
-//    public void createTestData()
-//    {
-//        for(int i=1;i<=3;i++)
-//        {
-//            News news = new News();
-//            news.setId(Long.valueOf(i));
-//            news.setTitle(String.valueOf(i));
-//            news.setDetails(String.valueOf(i));
-//            news.setTags(String.valueOf(i));
-//            news.setReportedTime(LocalDateTime.now());
-//            newsRepository.save(news);
-//        }
-//    }
 
     public List<News> findAll()
     {
@@ -56,12 +53,31 @@ public class NewsService {
         }
     }
 
-    public List<News> findByTitleLike(String title) {
+    public List<News> findByTitleLike(int page,int size,String title) {
         logger.info("Our operator is: "+sqlLike);
         logger.info("Title: "+title.replace("[\r\n]",""));    //log forgery.
+
+        if (page < pageMin) {
+            page = pageMin;
+        }
+        if (size > pageSizeMax) {
+            size = pageSizeMax;
+        } else if (size < pageSizeMin) {
+            size = pageSizeMin;
+        }
+
         List<News> newsList = newsRepository.findByTitleLike(sqlLike + title + sqlLike);
+
+        Pageable pageable = PageRequest.of(page, size);
+        if (title.isEmpty() || title.isBlank()) {
+            newsList = newsRepository.findByOrderByIdDesc(pageable).getContent();
+            return newsList;
+        }
+        newsList = newsRepository.findByTitleLikeOrderByIdDesc(pageable, sqlLike + title + sqlLike).getContent();
+
         return newsList; // If no matches are found, this will return an empty list
     }
+
 
     @Transactional
     public News create(News news) {

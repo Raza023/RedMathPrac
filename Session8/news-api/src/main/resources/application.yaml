@@ -8,6 +8,7 @@ logging:
     name: target/news.log
   level:
     sql: debug
+    web: debug
     '[com.practice.session2]': DEBUG
 
 spring:
@@ -31,6 +32,8 @@ spring:
     password: ${news.db.password}
   cache:
     type: caffeine
+    caffeine:
+      spec: maximumSize=5000,expireAfterAccess=300s
 #    url: ${NEWS_DB_URL}
 #    user: ${NEWS_DB_USER}
 #    password: ${NEWS_DB_PASSWORD}
@@ -60,5 +63,7 @@ generator:
 
 server:
   port: 9080
+#  servlet:
+#    context-path: /news
 
-spring.profiles.include: dev
+spring.profiles.include: dev, local

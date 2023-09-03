@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -43,7 +44,7 @@ public class WebSecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http.formLogin(Customizer.withDefaults());
-        http.authorizeHttpRequests(config -> config.anyRequest().authenticated());
+//        http.authorizeHttpRequests(config -> config.anyRequest().authenticated());
 
         http
                 .headers()
@@ -56,7 +57,12 @@ public class WebSecurityConfiguration {
 //        http.csrf(config -> config.disable());   //we don't have to disable it.
 //        http.headers().referrerPolicy()
 //                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.valueOf("strict-origin-when-cross-origin"));
-        http.csrf(config -> config.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));   //now it will handle the csrf token request without any problem.
+        http.csrf(config -> config.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));   //now it will handle the csrf token request without any problem.
+        http.authorizeHttpRequests(config -> config
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/**")).hasAnyAuthority("ACTUATOR")
+                .anyRequest().authenticated());
+
         http.sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }

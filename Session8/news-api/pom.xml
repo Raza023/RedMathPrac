@@ -34,6 +34,8 @@
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
+<!--			<optional>true</optional>-->
+			<!-- true because we want it only in dev phase not in production. We can add sql connector as well.-->
 		</dependency>
 		<dependency>
 			<groupId>com.mysql</groupId>
