@@ -1,0 +1,10 @@
+spring:
+  db:
+    url: jdbc:h2:mem:testDB
+    user: sa
+    password:
+
+
+#NEWS_DB_URL: jdbc:h2:mem:testDB
+#NEWS_DB_USER: SA
+#NEWS_DB_PASSWORD:

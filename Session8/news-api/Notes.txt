@@ -1,0 +1,240 @@
+----------------------------------------------1) Commands to set up angular--------------------------------------
+-----------------------------------------------1) Get request on angular-----------------------------------------
+npm -version
+npm init
+npm install http-server --save-dev
+npm start
+npm install cpx --save-dev
+npm install bootstrap --save
+npm run copy-libs
+npm install angular --save
+npm run copy-libs
+npm install angular-resource --save
+npm run copy-libs
+npm install angular-route --save
+npm run copy-libs
+
+
+-----------------------------news.js-----------------------
+(function () {
+    'use strict';
+
+    // Fetching data from http://localhost:9080/api/v1/news/search?search=%25
+
+    //Application register and define what are the dependencies you wanna use.
+    angular.module("news-fe", ['ngResource', 'ng']);
+
+    //$resource is dependency injection against server side resource.
+    //:id is optional and will handle one record get request, update, delete
+    //we always have to pass relative path.
+    //check this out: https://docs.angularjs.org/api/ngResource/service/$resource  for the examples of get, save(post), put, delete requests
+    //Service define
+    function NewsService($resource) {
+        return $resource('http://localhost:9080/api/v1/news/search:id');
+    }
+
+    //Service register
+    angular.module('news-fe').factory('newsService', ['$resource', NewsService]);
+
+    //News Controller (It will bind this view to backend resources.)
+    //equivalent to class
+    function NewsController(newsService) {
+        var self = this;
+
+        self.service = newsService;
+        self.accounts = [];
+        self.title = '';
+        self.display = false;            //for performance improvement.
+
+        self.init = function () {
+            self.search();
+        }
+
+        self.search = function () {
+            self.display = false;
+            var parameters = {};
+            if (self.title) {
+                parameters.search = '%'+self.title+'%';
+            }
+            else
+            {
+                parameters.search = '%';
+            }
+
+            self.service.get(parameters).$promise.then(function (response) {
+                self.display = true;
+                self.news = response.content;
+            });
+        }
+
+        self.init();
+    }
+
+    //Controller register  (pass dependency of service.)
+    angular.module("news-fe").controller('newsController', ['newsService', NewsController]);
+
+}());
+
+--------------------------news.html--------------------------
+<!DOCTYPE html>
+<!-- html 5 start point-->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <!-- <meta charset="iso"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- apply on all screens-->
+    <title>Home Page</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+</head>
+
+<body ng-app="news-fe" >
+
+<div class="container container-fluid" ng-controller="newsController as $ctrl">
+    <h1 style="text-align: center;">News Accounts</h1>
+
+
+    <form class="row g-3 needs-validation" novalidate>
+        <div class="col-md-12">
+            <label for="name" class="form-label">Enter Name</label>
+            <input ng-model="$ctrl.title" type="text" class="form-control" id="name" placeholder="name" required>
+            <div class="valid-feedback">
+                Looks good!
+            </div>
+        </div>
+        <br />
+        <div class="col-md-12">
+            <button class="btn btn-primary" type="submit" ng-click="$ctrl.search()">Search Accounts</button>
+        </div>
+    </form>
+    <br />
+
+    <div class="col-md-12">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-info">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Title</th>
+                <th scope="col">Details</th>
+                <th scope="col">Reported Time</th>
+                <th scope="col">Tags</th>
+            </tr>
+            </thead>
+            <tbody ng-if="$ctrl.display" class="table-group-divider">
+                <tr ng-repeat="item in ::$ctrl.news track by $index">
+                    <td>{{::item.id}}</td>
+                    <td>{{::item.title}}</td>
+                    <td>{{::item.details}}</td>
+                    <td>{{::item.reportedTime}}</td>
+                    <td>{{::item.tags}}</td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<script lang="javascript" src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
+
+<script lang="javascript" src="lib/angular/angular.min.js"></script>
+<script lang="javascript" src="lib/angular-resource/angular-resource.min.js"></script>
+<script lang="javascript" src="js/script.js"></script>
+<script lang="javascript" src="js/news.js"></script>
+<!-- All paths should be relative. -->
+
+
+</body>
+
+</html>
+
+---------------------package.json----------------------------
+{
+  "name": "news-ui",
+  "version": "1.0.0",
+  "description": "news-ui",
+  "main": "src/index.js",
+  "scripts": {
+    "postinstall": "npm run copy-libs",
+    "copy-libs": "cpx node_modules/{angular,angular-*,bootstrap/dist,jquery/dist}/**/* src/lib -u -C",
+    "start": "http-server src -a localhost -p 8080 -c-1 -P http://localhost:9080"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cpx": "^1.5.0",
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "angular": "^1.8.3",
+    "angular-resource": "^1.8.3",
+    "angular-route": "^1.8.3",
+    "bootstrap": "^5.3.1"
+  }
+}
+
+
+---------------------------------------------------1) CORS----------------------------------------------------
+
+------------------In Web Configuration file--------------
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+    http.formLogin(Customizer.withDefaults());
+    http.authorizeHttpRequests(config -> config.anyRequest().authenticated());
+
+    http
+            .headers()
+            .referrerPolicy()
+            .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+            .and()
+            .and();
+//                .csrf().disable(); // Disable CSRF for simplicity
+
+//        http.csrf(config -> config.disable());   //we don't have to disable it.
+    http.csrf(config -> config.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));   //now it will handle the csrf token request without any problem.
+    http.sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+    return http.build();
+}
+
+--------------------CorsConfiguration:--------------------
+@Configuration
+public class CorsConfig {
+
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+        corsConfiguration.addAllowedOrigin("*"); // Allow requests from any origin (you can restrict this to specific origins)
+        corsConfiguration.addAllowedHeader("*"); // Allow all headers
+        corsConfiguration.addAllowedMethod("*"); // Allow all HTTP methods
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
+
+        return new CorsFilter(source);
+    }
+}
+
+-----------------------NewsController-----------------------------------
+@GetMapping("/search") // Get news records by title
+public ResponseEntity<Map<String,List<News>>> findByTitleLike(@RequestParam(name = "search") String title) {
+    List<News> newsList = newsService.findByTitleLike(title);
+
+//        if (newsList.isEmpty()) {   //no need to do this.
+//            return ResponseEntity.notFound().build();
+//        }
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+    // Your response logic here
+    return ResponseEntity.ok()
+            .headers(headers)
+            .body(Map.of("content",newsList));
+
+//        return ResponseEntity.ok(Map.of("content",newsList));
+}
+

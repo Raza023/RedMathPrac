@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!-- html 5 start point-->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <!-- <meta charset="iso"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- apply on all screens-->
+    <title>Home Page</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+</head>
+
+<body ng-app="news-fe" >
+
+<div class="container container-fluid" ng-controller="newsController as $ctrl">
+    <h1 style="text-align: center;">News Accounts</h1>
+
+
+    <form class="row g-3 needs-validation" novalidate>
+        <div class="col-md-12">
+            <label for="name" class="form-label">Enter Name</label>
+            <input ng-model="$ctrl.title" type="text" class="form-control" id="name" placeholder="name" required>
+            <div class="valid-feedback">
+                Looks good!
+            </div>
+        </div>
+        <br />
+        <div class="col-md-12">
+            <button class="btn btn-primary" type="submit" ng-click="$ctrl.search()">Search Accounts</button>
+        </div>
+    </form>
+    <br />
+
+    <div class="col-md-12">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-info">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Title</th>
+                <th scope="col">Details</th>
+                <th scope="col">Reported Time</th>
+                <th scope="col">Tags</th>
+            </tr>
+            </thead>
+            <tbody ng-if="$ctrl.display" class="table-group-divider">
+                <tr ng-repeat="item in ::$ctrl.news track by $index">
+                    <td>{{::item.id}}</td>
+                    <td>{{::item.title}}</td>
+                    <td>{{::item.details}}</td>
+                    <td>{{::item.reportedTime}}</td>
+                    <td>{{::item.tags}}</td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<script lang="javascript" src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
+
+<script lang="javascript" src="lib/angular/angular.min.js"></script>
+<script lang="javascript" src="lib/angular-resource/angular-resource.min.js"></script>
+<script lang="javascript" src="js/script.js"></script>
+<script lang="javascript" src="js/news.js"></script>
+<!-- All paths should be relative. -->
+
+
+</body>
+
+</html>

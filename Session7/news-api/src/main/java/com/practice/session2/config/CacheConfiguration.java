@@ -1,4 +1,4 @@
-package com.practice.session2.News.config;
+package com.practice.session2.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
