@@ -12,20 +12,94 @@
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
 </head>
 <body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">News WebApp</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="#!/search">Search</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="#!/news">Create</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="#!/login">Login</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="#!/logout">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
 
-<div class="container container-fluid">
-    <h1 class="redColor">This is Index file.</h1>
-    <p id="blueColor">This is my first paragraph.</p>
-    <p id="greenColor">This is my second paragraph.</p>
-    <p class="redColor">This is my first paragraph.</p>
-    <p id="applyJs" class="redColor">This is my second paragraph.</p>
+<div class="container container-fluid" ng-app="news-fe">
+    <div class="container" ng-controller="newsController as $ctrl">
+        <form>
+            <div class="row mb-3">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-4">
+                    <h4>Save News</h4>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Id</label>
+                <div class="col-sm-4">
+                    <input class="form-control" type="text" id="id" placeholder="Id" ng-model="$ctrl.newsItem.id" required
+                           autofocus />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Title</label>
+                <div class="col-sm-4">
+                    <input class="form-control" type="text" id="title" placeholder="Title" ng-model="$ctrl.newsItem.title"
+                           required />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Details</label>
+                <div class="col-sm-4">
+                <textarea class="form-control" id="details" rows="5" placeholder="Details"
+                          ng-model="$ctrl.newsItem.details" required></textarea>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Tags</label>
+                <div class="col-sm-4">
+                    <input class="form-control" type="text" id="tags" placeholder="Tags" ng-model="$ctrl.newsItem.tags"
+                           required />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Reported At</label>
+                <div class="col-sm-4">
+                    <input class="form-control" type="text" id="reportedAt" placeholder="Reported Time"
+                           ng-model="$ctrl.newsItem.reportedTime" required />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-4">
+                    <button class="btn btn-outline-primary" type="button" ng-click="$ctrl.save()">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 
 
-<script lang="javascript" src="js/script.js"></script>
-<script lang="javascript" src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
+
+<script lang="javascript" src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script lang="javascript" src="lib/angular/angular.min.js"></script>
 <script lang="javascript" src="lib/angular-resource/angular-resource.min.js"></script>
+<script lang="javascript" src="lib/angular-route/angular-route.min.js"></script>
+
+<script lang="javascript" src="js/script.js"></script>
+<script lang="javascript" src="js/news.js"></script>
 
 </body>
 </html>
+

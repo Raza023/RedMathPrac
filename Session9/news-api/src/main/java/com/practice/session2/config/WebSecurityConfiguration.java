@@ -35,6 +35,10 @@ public class WebSecurityConfiguration {
     {
         return web -> web.ignoring().requestMatchers(new AntPathRequestMatcher("/api/v1/news", "GET"))
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/news/**", "GET"))
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/news", "POST"))
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/news/**", "POST"))
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/news", "PUT"))
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/news/**", "PUT"))
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/news/search", "GET"))
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/news/search/**", "GET"))
                 .requestMatchers(new AntPathRequestMatcher("/actuator", "GET"))

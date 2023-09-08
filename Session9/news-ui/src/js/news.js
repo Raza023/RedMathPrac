@@ -10,7 +10,8 @@
     //check this out: https://docs.angularjs.org/api/ngResource/service/$resource  for the examples of get, save(post), put, delete requests
     //Service define
     function NewsService($resource) {
-        return $resource('http://localhost:9080/api/v1/news/search:id');
+        return $resource('http://localhost:9080/api/v1/news/:id', { id: '@id' });
+        // , { id: '@id' } for update and insert request as well.
     }
 
     //Service register
@@ -25,6 +26,7 @@
         self.news = [];
         self.title = '';
         self.display = false;            //for performance improvement.
+        self.newsItem = {};
 
         self.init = function () {
             self.search();
@@ -45,6 +47,13 @@
                 self.display = true;
                 self.news = response.content;
             });
+
+            self.save = function() {
+                self.service.save(self.newsItem).$promise.then(function(response) {
+                    self.newsItem.id = response.content.id;
+                    self.newsItem.reportedTime = response.content.reportedTime;
+                });
+            }
         }
 
         self.init();

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>News</title>
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <div>welcome !!!</div>
+        <hello-world></hello-world>
+        <hello-world></hello-world>
+        <hello-world></hello-world>
+    </div>
+
+    <template id="template123">
+        <div>hello world !!!</div>
+    </template>
+
+    <script lang="javascript" src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script lang="javascript">
+        class HelloWorld extends HTMLElement {
+            constructor() {
+                super();
+                const template = document.getElementById("template123").content;
+                const shadowRoot = this.attachShadow({mode: "open"});
+                shadowRoot.appendChild(template.cloneNode(true));
+            }
+        }
+        customElements.define("hello-world", HelloWorld);
+        //var testTemplate = document.getElementById("template123").content;
+        //document.getElementById("p123").appendChild(testTemplate.cloneNode(true));
+        //document.getElementById("p456").appendChild(testTemplate.cloneNode(true));
+        //document.getElementById("p789").appendChild(testTemplate.cloneNode(true));
+    </script>
+
+</body>
+
+</html>
