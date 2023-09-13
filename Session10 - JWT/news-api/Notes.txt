@@ -1,0 +1,219 @@
+Tutorial:
+https://www.youtube.com/watch?v=rBNOc4ymd1E&ab_channel=JavaTechie
+
+Code example:
+https://github.com/Java-Techie-jt/spring-security-jwt-example
+
+Motive:
+Stateless Authentication Management
+User state(or input) is never saved in server memory or cookies.
+(We don't need csrf in this case. It will work independently without any problem.)
+Even if I have multiple server, I just have to send JSON web token to authenticate.
+
+
+------------------------------------------------------steps------------------------------------------------------
+
+-----------------------------Step 1-----------------------------
+Dependencies> Lombok, web, security, h2, JPA, jjwt
+
+Add dependency for jwt:
+https://central.sonatype.com/artifact/io.jsonwebtoken/jjwt
+
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt</artifactId>
+    <version>0.9.1</version>
+</dependency>
+
+for WebSecurityConfigurerAdapter:
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-config</artifactId>
+</dependency>
+
+(don't need following two)
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version> <!-- Use the appropriate version -->
+</dependency>
+or
+<dependency>
+    <groupId>jakarta.servlet</groupId>
+    <artifactId>jakarta.servlet-api</artifactId>
+    <version>5.0.0</version> <!-- Use the appropriate Jakarta EE version -->
+    <scope>provided</scope>
+</dependency>
+
+code in web security configuration:
+
+@Autowired
+private UserService userService;
+
+@Override
+protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+    auth.userDetailsService(userService);
+}
+
+
+-----------------------------Step 2-----------------------------
+Make User (Entity, Repository, Service, Controller)
+
+----------------------------Step 3----------------------------
+create JwtUtil class:
+
+@Service
+public class JwtUtil {
+
+    private String secret = "javatechie";
+
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+    }
+
+    private Boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    public String generateToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, username);
+    }
+
+    private String createToken(Map<String, Object> claims, String subject) {
+        return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 24 * 60 * 60 * 10))
+                .signWith(SignatureAlgorithm.HS256, secret).compact();
+    }
+
+    public Boolean validateToken(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+}
+
+
+-----------------------step 4-------------------------
+In NewsController:
+
+@Autowired
+private JwtUtil jwtUtil;
+@Autowired
+private AuthenticationManager authenticationManager;
+
+@PostMapping("/authenticate")
+public String generateToken(@RequestBody User user) throws Exception {
+    try {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
+        );
+    } catch (Exception ex) {
+        throw new Exception("inavalid username/password");
+    }
+    return jwtUtil.generateToken(user.getUserName());
+}
+
+In WebSecurityConfiguration:
+@Bean(name = BeanIds.AUTHENTICATION_MANAGER)
+@Override
+public AuthenticationManager authenticationManagerBean() throws Exception {
+    return super.authenticationManagerBean();
+}
+
+---------------------------step 5---------------------------
+Now hit localhost:9080/api/v1/news/authenticate (post)
+with Request Body: {"userName":"editor","password":"editor"}
+and get jwt token.
+
+
+------------------------step 6----------------------------
+create filter>JwtFilter
+
+@Component
+public class JwtFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private UserService userService;
+
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
+
+        String authorizationHeader = httpServletRequest.getHeader("Authorization");
+
+        String token = null;
+        String userName = null;
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+            userName = jwtUtil.extractUsername(token);
+        }
+
+        if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            UserDetails userDetails = userService.loadUserByUsername(userName);
+
+            if (jwtUtil.validateToken(token, userDetails)) {
+
+                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                usernamePasswordAuthenticationToken
+                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
+                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+            }
+        }
+        filterChain.doFilter(httpServletRequest, httpServletResponse);
+    }
+}
+
+
+In WebSecurityConfiguration:
+
+@Autowired
+private JwtFilter jwtFilter;
+
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.csrf().disable().authorizeRequests().antMatchers("/authenticate")
+            .permitAll().anyRequest().authenticated()
+            .and().exceptionHandling().and().sessionManagement()
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+    http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);;
+}
+
+Now create other requests on frontend like:
+self.login = function() {
+    // Send a POST request to authenticate and get the JWT token
+    $http.post('http://localhost:9080/api/v1/news/authenticate', {
+        userName: self.user.name,
+        password: self.user.password
+    }).then(function(response) {
+        // Assuming the JWT token is in the 'token' field of the response
+        var token = response.data.token;
+
+        // Store the token in local storage or a cookie for future use
+        // You should use a more secure way to store tokens in production
+
+        // Now, make the actual login request with the obtained token
+        $http.post('login', 'username=' + self.user.name + '&password=' + self.user.password, {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": "Bearer " + token  // Include the JWT token in the headers
+            }
+        }).then(self.loginSuccess, self.loginFailure);
+    }).catch(self.loginFailure);
+}

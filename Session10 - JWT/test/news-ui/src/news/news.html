@@ -1,0 +1,51 @@
+<div class="container">
+    <form>
+        <div class="row mb-3">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4">
+                <h4>Save News</h4>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Id</label>
+            <div class="col-sm-4">
+                <input class="form-control" type="text" id="id" placeholder="Id" ng-model="$ctrl.newsItem.id" required
+                    autofocus />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Title</label>
+            <div class="col-sm-4">
+                <input class="form-control" type="text" id="title" placeholder="Title" ng-model="$ctrl.newsItem.title"
+                    required />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Details</label>
+            <div class="col-sm-4">
+                <textarea class="form-control" id="details" rows="5" placeholder="Details"
+                    ng-model="$ctrl.newsItem.details" required></textarea>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Tags</label>
+            <div class="col-sm-4">
+                <input class="form-control" type="text" id="tags" placeholder="Tags" ng-model="$ctrl.newsItem.tags"
+                    required />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Reported At</label>
+            <div class="col-sm-4">
+                <input class="form-control" type="text" id="tags" placeholder="Reported At"
+                    ng-model="$ctrl.newsItem.reportedAt" required />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4">
+                <button class="btn btn-outline-primary" type="button" ng-click="$ctrl.save()">Save</button>
+            </div>
+        </div>
+    </form>
+</div>

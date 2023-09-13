@@ -1,0 +1,37 @@
+<div class="row">
+    <div class="col-sm-2">
+        <h4>Search News</h4>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-10">
+        <input type="text" id="title" name="title" class="form-control" ng-model="$ctrl.title"></input>
+    </div>
+    <div class="col-sm-2">
+        <input type="button" id="search" name="search" value="Search" class="btn btn-primary" ng-click="$ctrl.search()">
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Title</th>
+                    <th>Details</th>
+                    <th>Tags</th>
+                    <th>Reported At</th>
+                </tr>
+            </thead>
+            <tbody ng-if="$ctrl.display">
+                <tr ng-repeat="item in ::$ctrl.news track by $index">
+                    <td>{{::item.id}}</td>
+                    <td>{{::item.title}}</td>
+                    <td>{{::item.details}}</td>
+                    <td>{{::item.tags}}</td>
+                    <td>{{::item.reportedAt}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

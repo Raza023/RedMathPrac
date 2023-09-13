@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>News</title>
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">News WebApp</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#!/search">Search</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#!/news">Create</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#!/login">Login</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#!/logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" ng-app="news-fe">
+        <div ng-view></div>
+    </div>
+
+    <script lang="javascript" src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script lang="javascript" src="lib/angular/angular.min.js"></script>
+    <script lang="javascript" src="lib/angular-resource/angular-resource.min.js"></script>
+    <script lang="javascript" src="lib/angular-route/angular-route.min.js"></script>
+    <script lang="javascript" src="js/index.js"></script>
+    <script lang="javascript" src="js/news/news.js"></script>
+    <script lang="javascript" src="js/signing/signing.js"></script>
+</body>
+
+</html>
