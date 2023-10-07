@@ -1,0 +1,1028 @@
+-----------------------------------------------------------------Session 03-----------------------------------------------------------------
+
+1) Logger
+2) search by title
+3) @Query("SELECT n FROM News n WHERE n.title LIKE %:s%")  implementation
+4) @Value
+5) resources/logback-spring.xml  //for quite complex logging   //https://logback.qos.ch/manual/configuration.html
+6) resources/application-dev.yaml                //include it in application.yaml (for _ use _ and for . use . in both files)
+7) remove warn
+8) Unit testing (TDD)
+
+-----------------------------------------------------------------Session 04-----------------------------------------------------------------
+1) Add Spring Security and add two dependencies
+2) Three functions to fetch username
+3) login from database
+4) ignoring endpoints with /config/WebSecurityConfiguration and two methods of @Bean to ignore security authentication on specific end points.
+5) unit testing with mock user on authenticated endpoints and csrf (token) is enabled by default. We have to disable it in WebSecurityConfiguration.
+
+mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/news")
+						.with(SecurityMockMvcRequestPostProcessors.user("reporter"))
+or
+
+@WithMockUser(username = "reporter") //, roles = {"ROLE_USER"}) // Set up a mock user
+
+6) Disabling csrf is not a solution to go with, so what we gotta do is we have to enable it and we have to mock it.
+
+7) Authorization (Method level security)
+-> In WebSecurityConfiguration add annotation @EnableMethodSecurity
+-> Now in NewsController you have to give @PreAuthorize("hasAuthority('REPORTER') or asAuthority('EDITOR')") to insert, update and delete.
+-> mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/news")
+						.with(SecurityMockMvcRequestPostProcessors.user("reporter").authorities(new SimpleGrantedAuthority("REPORTER")))
+
+8) Log Forgery is prevented in NewsService.
+9) (i) auto increment using IDENTITY (index)
+->  @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
+->  in schema.yaml:
+
+    databaseChangeLog:
+      - changeSet:
+          id: schema-0.0.1
+          author: news team
+          changes:
+            - createTable:
+                tableName: news
+                columns:
+                  - column:
+                      name: id
+                      type: bigint
+                      autoIncrement: true             //add this
+                      constraints:
+                        nullable: false
+                  - column:
+                      name: title
+                      type: varchar(255)
+                  - column:
+                      name: details
+                      type: varchar(1000)
+                  - column:
+                      name: tags
+                      type: varchar(255)
+                  - column:
+                      name: reported_time
+                      type: DATETIME
+            - addPrimaryKey:
+                tableName: news
+                columnNames: id
+                constraintName: news_pk
+            - createIndex:
+                tableName: news
+                indexName: news_ix_01
+                columns:
+                  - column:
+                      name: title
+      - changeSet:                                             //write this.
+          id: alter-table-auto-increment
+          author: news team
+          changes:
+            - sql:
+                sql: ALTER TABLE news ALTER COLUMN id RESTART WITH 3;
+
+9) (ii) auto increment using sequence
+
+->  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "news_sequence")
+    @SequenceGenerator(name = "news_sequence", sequenceName = "news_sequence", allocationSize = 1)
+    @Id
+    private long id;
+
+-> In schema.yaml
+databaseChangeLog:
+    - changeSet:
+        id: create-sequence
+        author: news team
+        changes:
+          - sql:
+              sql: CREATE SEQUENCE news_sequence START WITH 3;
+              # because two records were already given hard coded.
+    - changeSet:
+        id: schema-0.0.1
+        author: news team
+        changes:
+          - createTable:
+              tableName: news
+              columns:
+                - column:
+                    name: id
+                    type: bigint
+                    defaultValueComputed: "NEXT VALUE FOR news_sequence"
+                    constraints:
+                      nullable: false
+                - column:
+                    name: title
+                    type: varchar(255)
+                - column:
+                    name: details
+                    type: varchar(1000)
+                - column:
+                    name: tags
+                    type: varchar(255)
+                - column:
+                    name: reported_time
+                    type: DATETIME
+          - addPrimaryKey:
+              tableName: news
+              columnNames: id
+              constraintName: news_pk
+          - createIndex:
+              tableName: news
+              indexName: news_ix_01
+              columns:
+                - column:
+                    name: title
+
+-----------------------------------------------------------------Session 05-----------------------------------------------------------------
+----------Quality Assurance --------------------
+
+
+1) Clean code (Quality code)
+
+Add two plugins for it.
+i) checkstyle:
+    code formatting (proper and consistent indentation), invalid statement
+ii) pmd:
+    Identifies basic bugs and report it.
+iii)spotbugs maven plugin:
+    Identify bugs(sql injection, security related bugs)
+
+                <plugin>
+    				<groupId>org.apache.maven.plugins</groupId>
+    				<artifactId>maven-checkstyle-plugin</artifactId>
+    				<version>3.3.0</version>
+    				<executions>
+    					<execution>
+    						<id>default-cli</id>
+    						<goals>
+    							<goal>check</goal>
+    						</goals>
+    						<phase>validate</phase>
+    					</execution>
+    				</executions>
+    				<configuration>
+    					<configLocation>google_checks.xml</configLocation>
+    				</configuration>
+    			</plugin>
+    			<plugin>
+    				<groupId>org.apache.maven.plugins</groupId>
+    				<artifactId>maven-pmd-plugin</artifactId>
+    				<version>3.21.0</version>
+    				<executions>
+    					<execution>
+    						<id>default-cli</id>
+    						<goals>
+    							<goal>check</goal>
+    						</goals>
+    						<phase>validate</phase>
+    					</execution>
+    				</executions>
+    			</plugin>
+    			<plugin>
+    				<groupId>com.github.spotbugs</groupId>
+    				<artifactId>spotbugs-maven-plugin</artifactId>
+    				<version>4.0.4</version>
+    				<executions>
+    					<execution>
+    						<id>default-cli</id>
+    						<goals>
+    							<goal>check</goal>
+    						</goals>
+    						<phase>verify</phase>
+    					</execution>
+    				</executions>
+    				<configuration>
+    					<effort>Max</effort>
+    					<threshold>Normal</threshold>
+    					<failOnError>true</failOnError>
+    					<plugins>
+    						<plugin>
+    							<groupId>com.h3xstream.findsecbugs</groupId>
+    							<artifactId>findsecbugs-plugin</artifactId>
+    							<version>LATEST</version>
+    						</plugin>
+    					</plugins>
+    				</configuration>
+    			</plugin>
+
+
+2) JUnit: Unit test controller with spring boot starter test & security  (go through testing file.)
+
+3) REST API: Swagger based rest endpoint specifications
+https://springdoc.org/#getting-started
+https://www.baeldung.com/spring-rest-openapi-documentation
+https://chat.openai.com/share/f518cd0c-84b7-4f72-8695-f6bc474278a5   (for the implementation of csrf for swagger insert,update and delete)
+
+        <dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.2.0</version>
+		</dependency>
+
+
+4) Production: monitoring / actuator
+
+        <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+create dashboard for monitoring on (grafana.com)  (video tutorial: https://youtu.be/gJZhdEJvZmc?si=J97g47DhOpLg3Z4a)
+
+5) System testing: Overview of BDD, cucumber-jvm
+
+
+6) JDBC Template   (alternative of repository, you can use it if you don't wanna use repository. )
+see HomeController and UserService for the implementation of JDBC template.
+
+7) @EnableCaching @Cacheable   (when a special request is being done again and again.)
+
+Step 1)
+@Cacheable("userNameCache") // Define a cache named "userNameCache"
+public User findByUserName(String userName) {
+    String sql = "SELECT * FROM users WHERE user_name = ?";
+    return jdbcTemp.queryForObject(sql, new Object[]{userName}, new BeanPropertyRowMapper<>(User.class));
+}
+
+Step 2)
+In config> make a class CacheConfiguration
+(alternative is just paste this line in application.properties:   spring.cache.caffeine.spec=maximumSize=100,expireAfterWrite=10m)
+
+@Configuration
+@EnableCaching
+public class CacheConfiguration {
+    @Bean
+    public CacheManager cacheManager() {
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        cacheManager.setCaffeine(Caffeine.newBuilder()
+                .maximumSize(100) // Set the maximum cache size
+                .expireAfterWrite(10, TimeUnit.MINUTES) // Set the cache entry expiration time
+                .recordStats()); // Enable cache statistics (optional)
+        return cacheManager;
+    }
+}
+
+Step 3)
+Add dependency of caffeine
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-cache</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.github.ben-manes.caffeine</groupId>
+    <artifactId>caffeine</artifactId>
+</dependency>
+
+Step 4)
+In application.yaml
+spring:
+  cache:
+    type: caffeine
+
+
+8) EnableAsync
+
+step 1) In pom.xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+step 2)
+@SpringBootApplication
+@EnableAsync
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(YourApplication.class, args);
+    }
+}
+
+step 3)  make db call, send Email and any other func in service Async to make the execution of these functions async.
+@Service
+public class YourService {
+    @Async
+    public void performAsyncTask() {
+        // Your asynchronous task logic here
+    }
+}
+
+9) @EnableScheduling
+
+step 1) In pom.xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+
+step 2)
+@SpringBootApplication
+@EnableScheduling
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(YourApplication.class, args);
+    }
+}
+
+step 3)
+1. fixedRate Attribute:
+
+@Component
+public class FixedRateTask {
+    @Scheduled(fixedRate = 5000) // Execute every 5 seconds
+    public void performFixedRateTask() {
+        // Your task logic here
+    }
+}
+
+2. fixedDelay Attribute:
+
+@Component
+public class FixedDelayTask {
+    @Scheduled(fixedDelay = 10000) // Execute after a delay of 10 seconds
+    public void performFixedDelayTask() {
+        // Your task logic here
+    }
+}
+
+3. initialDelay Attribute:
+
+@Component
+public class InitialDelayTask {
+    @Scheduled(initialDelay = 30000, fixedRate = 60000) // Start after 30 seconds, then execute every 60 seconds
+    public void performInitialDelayTask() {
+        // Your task logic here
+    }
+}
+
+4. cron Expression:   visit this website to make cron: http://www.cronmaker.com/
+
+@Component
+public class CronTask {
+    @Scheduled(cron = "0 0 12 * * ?") // Execute at 12:00 PM every day
+    public void performCronTask() {
+        // Your task logic here
+    }
+}
+
+10) Authenticated user data.
+
+@GetMapping
+public ResponseEntity<Map<String, String>> simpleMapingFunctionThatReturnsText(){
+    User user = userService.findByUserName("reporter");
+    String role = user.getRoles();
+
+    // Retrieve the current Authentication object
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String AuthUserName = "";
+    if (auth != null) {
+        AuthUserName =  auth.getName();
+    } else {
+        // Handle the case when there is no authentication
+        AuthUserName =  "Anonymous";
+    }
+    return ResponseEntity.ok(Map.of("message","Current time is: "+ LocalDateTime.now() +
+            ". Role of my user is: " + role + ". Authenticated user name is: "+ AuthUserName));
+}
+
+11) csrf token request:
+
+@Bean
+public WebSecurityCustomizer webSecurityCustomizer()
+{
+    return web -> web.ignoring().requestMatchers(new AntPathRequestMatcher("/api/v1/news", "GET"))
+            .requestMatchers(new AntPathRequestMatcher("/api/v1/news/**", "GET"))
+            .requestMatchers(new AntPathRequestMatcher("/actuator", "GET"))
+            .requestMatchers(new AntPathRequestMatcher("/actuator/**", "GET"));
+}
+
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+    http.formLogin(Customizer.withDefaults());
+    http.authorizeHttpRequests(config -> config.anyRequest().authenticated());
+    //http.csrf(config -> config.disable());                                                          //we don't have to disable it.
+    http.csrf(config -> config.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));   //now it will handle the csrf token request without any problem.
+    return http.build();
+}
+
+
+-----------------------------------------------------------------Session 06-----------------------------------------------------------------
+set PATH=%PATH%;D:\Softwares\node-v18.17.1-win-x64
+
+set PATH=D:\Softwares\node-v18.17.1-win-x64;%PATH%
+
+RUN THIS COMMAND TO SET ENVIRONMENT.
+
+
+
+-----------------------------------------------------------------Session 07-----------------------------------------------------------------
+
+----------------------------------------------1) Commands to set up angular--------------------------------------
+npm -version
+npm init
+npm install http-server --save-dev
+npm start
+npm install cpx --save-dev
+npm install bootstrap --save
+npm run copy-libs
+npm install angular --save
+npm run copy-libs
+npm install angular-resource --save
+npm run copy-libs
+npm install angular-route --save
+npm run copy-libs
+
+-----------------------------------------------2) Get request on angular-----------------------------------------
+
+-----------------------------news.js-----------------------
+(function () {
+    'use strict';
+
+    // Fetching data from http://localhost:9080/api/v1/news/search?search=%25
+
+    //Application register and define what are the dependencies you wanna use.
+    angular.module("news-fe", ['ngResource', 'ng']);
+
+    //$resource is dependency injection against server side resource.
+    //:id is optional and will handle one record get request, update, delete
+    //we always have to pass relative path.
+    //check this out: https://docs.angularjs.org/api/ngResource/service/$resource  for the examples of get, save(post), put, delete requests
+    //Service define
+    function NewsService($resource) {
+        return $resource('http://localhost:9080/api/v1/news/search:id');
+    }
+
+    //Service register
+    angular.module('news-fe').factory('newsService', ['$resource', NewsService]);
+
+    //News Controller (It will bind this view to backend resources.)
+    //equivalent to class
+    function NewsController(newsService) {
+        var self = this;
+
+        self.service = newsService;
+        self.accounts = [];
+        self.title = '';
+        self.display = false;            //for performance improvement.
+
+        self.init = function () {
+            self.search();
+        }
+
+        self.search = function () {
+            self.display = false;
+            var parameters = {};
+            if (self.title) {
+                parameters.search = '%'+self.title+'%';
+            }
+            else
+            {
+                parameters.search = '%';
+            }
+
+            self.service.get(parameters).$promise.then(function (response) {
+                self.display = true;
+                self.news = response.content;
+            });
+        }
+
+        self.init();
+    }
+
+    //Controller register  (pass dependency of service.)
+    angular.module("news-fe").controller('newsController', ['newsService', NewsController]);
+
+}());
+
+--------------------------news.html--------------------------
+<!DOCTYPE html>
+<!-- html 5 start point-->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <!-- <meta charset="iso"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- apply on all screens-->
+    <title>Home Page</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+</head>
+
+<body ng-app="news-fe" >
+
+<div class="container container-fluid" ng-controller="newsController as $ctrl">
+    <h1 style="text-align: center;">News Accounts</h1>
+
+
+    <form class="row g-3 needs-validation" novalidate>
+        <div class="col-md-12">
+            <label for="name" class="form-label">Enter Name</label>
+            <input ng-model="$ctrl.title" type="text" class="form-control" id="name" placeholder="name" required>
+            <div class="valid-feedback">
+                Looks good!
+            </div>
+        </div>
+        <br />
+        <div class="col-md-12">
+            <button class="btn btn-primary" type="submit" ng-click="$ctrl.search()">Search Accounts</button>
+        </div>
+    </form>
+    <br />
+
+    <div class="col-md-12">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-info">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Title</th>
+                <th scope="col">Details</th>
+                <th scope="col">Reported Time</th>
+                <th scope="col">Tags</th>
+            </tr>
+            </thead>
+            <tbody ng-if="$ctrl.display" class="table-group-divider">
+                <tr ng-repeat="item in ::$ctrl.news track by $index">
+                    <td>{{::item.id}}</td>
+                    <td>{{::item.title}}</td>
+                    <td>{{::item.details}}</td>
+                    <td>{{::item.reportedTime}}</td>
+                    <td>{{::item.tags}}</td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<script lang="javascript" src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
+
+<script lang="javascript" src="lib/angular/angular.min.js"></script>
+<script lang="javascript" src="lib/angular-resource/angular-resource.min.js"></script>
+<script lang="javascript" src="js/script.js"></script>
+<script lang="javascript" src="js/news.js"></script>
+<!-- All paths should be relative. -->
+
+
+</body>
+
+</html>
+
+---------------------package.json----------------------------
+{
+  "name": "news-ui",
+  "version": "1.0.0",
+  "description": "news-ui",
+  "main": "src/index.js",
+  "scripts": {
+    "postinstall": "npm run copy-libs",
+    "copy-libs": "cpx node_modules/{angular,angular-*,bootstrap/dist,jquery/dist}/**/* src/lib -u -C",
+    "start": "http-server src -a localhost -p 8080 -c-1 -P http://localhost:9080"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cpx": "^1.5.0",
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "angular": "^1.8.3",
+    "angular-resource": "^1.8.3",
+    "angular-route": "^1.8.3",
+    "bootstrap": "^5.3.1"
+  }
+}
+--------------------------------------------------3) Stateless JWT (pending)-------------------------------------
+http.sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+https://chat.openai.com/share/aa57b76b-eb0c-44a3-8840-26a653883504
+
+---------------------------------------------------3) CORS----------------------------------------------------
+
+------------------In Web Configuration file--------------
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+    http.formLogin(Customizer.withDefaults());
+    http.authorizeHttpRequests(config -> config.anyRequest().authenticated());
+
+    http
+            .headers()
+            .referrerPolicy()
+            .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+            .and()
+            .and();
+//                .csrf().disable(); // Disable CSRF for simplicity
+
+//        http.csrf(config -> config.disable());   //we don't have to disable it.
+    http.csrf(config -> config.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));   //now it will handle the csrf token request without any problem.
+    http.sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+    return http.build();
+}
+
+--------------------CorsConfiguration:--------------------
+@Configuration
+public class CorsConfig {
+
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+        corsConfiguration.addAllowedOrigin("*"); // Allow requests from any origin (you can restrict this to specific origins)
+        corsConfiguration.addAllowedHeader("*"); // Allow all headers
+        corsConfiguration.addAllowedMethod("*"); // Allow all HTTP methods
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
+
+        return new CorsFilter(source);
+    }
+}
+
+-----------------------NewsController-----------------------------------
+@GetMapping("/search") // Get news records by title
+public ResponseEntity<Map<String,List<News>>> findByTitleLike(@RequestParam(name = "search") String title) {
+    List<News> newsList = newsService.findByTitleLike(title);
+
+//        if (newsList.isEmpty()) {   //no need to do this.
+//            return ResponseEntity.notFound().build();
+//        }
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+    // Your response logic here
+    return ResponseEntity.ok()
+            .headers(headers)
+            .body(Map.of("content",newsList));
+
+//        return ResponseEntity.ok(Map.of("content",newsList));
+}
+
+
+-----------------------------------------------------------------Session 08-----------------------------------------------------------------
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>runtime</scope>
+    <!-- <optional>true</optional> -->
+    <!-- true because we want it only in dev phase not in production. We can add sql connector as well.-->
+</dependency>
+
+--------------------------------------1) ApiResponse for pagging-------------------------------------
+
+---------------basic>ApiResponse--------------------
+package com.practice.session2.basic;
+
+public class ApiResponse<T> {
+
+    private final T content;
+
+    public ApiResponse(T content) {
+        this.content = content;
+    }
+
+    public T getContent() {
+        return content;
+    }
+
+    public static <T> ApiResponse<T> of(T content) {
+        return new ApiResponse<T>(content);
+    }
+}
+
+------------------NewsController---------------------
+    @GetMapping("/search") // Get news records by title
+    public ResponseEntity<ApiResponse<List<News>>> findByTitleLike(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "100") int size,
+            @RequestParam(name = "search", defaultValue = "") String title) {
+        List<News> newsList = newsService.findByTitleLike(page, size, title);
+
+//        if (newsList.isEmpty()) {   //no need to do this.
+//            return ResponseEntity.notFound().build();
+//        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+        // Your response logic here
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(ApiResponse.of(newsList));  //we don't have to do any mapping for it.
+
+//        return ResponseEntity.ok(Map.of("content",newsList));
+    }
+----------------------NewsService------------------------
+    //page(0,      1,      2,     3,..........)
+    //size(001-100,101-200,201-300,...........)
+
+    @Value("${news.page.min:0}")
+    public int pageMin = 0;
+
+    @Value("${news.page.size.min:1}")
+    public int pageSizeMin = 1;
+
+    @Value("${news.page.size.max:100}")
+    public int pageSizeMax = 100;
+
+
+    public List<News> findByTitleLike(int page,int size,String title) {
+        logger.info("Our operator is: "+sqlLike);
+        logger.info("Title: "+title.replace("[\r\n]",""));    //log forgery.
+
+        if (page < pageMin) {
+            page = pageMin;
+        }
+        if (size > pageSizeMax) {
+            size = pageSizeMax;
+        } else if (size < pageSizeMin) {
+            size = pageSizeMin;
+        }
+
+        List<News> newsList = newsRepository.findByTitleLike(sqlLike + title + sqlLike);
+
+        Pageable pageable = PageRequest.of(page, size);
+        if (title.isEmpty() || title.isBlank()) {
+            newsList = newsRepository.findByOrderByIdDesc(pageable).getContent();
+            return newsList;
+        }
+        newsList = newsRepository.findByTitleLikeOrderByIdDesc(pageable, sqlLike + title + sqlLike).getContent();
+
+        return newsList; // If no matches are found, this will return an empty list
+    }
+
+---------------------------NewsRepository-----------------------
+    Page<News> findByOrderByIdDesc(Pageable pageable);
+
+    Page<News> findByTitleLikeOrderByIdDesc(Pageable pageable, String title);
+
+
+--------------------------Context------------------------------
+1) In db.changelog-master.yaml
+specify (context: local)
+
+databaseChangeLog:
+- include:
+    file: db.changelog-schema-0.0.1.yaml
+    relativeToChangelogFile: true
+- include:
+    file: db.changelog-data-0.0.1.yaml
+    relativeToChangelogFile: true
+    context: local
+- include:
+    file: db.changelog-schema-0.0.2.yaml
+    relativeToChangelogFile: true
+- include:
+    file: db.changelog-data-0.0.2.yaml
+    relativeToChangelogFile: true
+    context: local
+- include:
+    file: db.changelog-data-0.0.3.yaml
+    relativeToChangelogFile: true
+    context: local
+
+2) In application.yaml:
+spring:
+  liquibase:
+    contexts: ${news.liquibase.contexts:}
+spring.profiles.include: local
+
+3) In application-local.yaml
+news:
+  liquibase:
+    contexts: local
+
+--------------------change context of app to access data.--------------------
+server:
+  port: 9080
+  servlet:
+    context-path: /news
+
+
+-----------------------------------------------------------------Session 09-----------------------------------------------------------------
+--------------------------------------------------------------Session 10 - JWT--------------------------------------------------------------
+Tutorial:
+https://www.youtube.com/watch?v=rBNOc4ymd1E&ab_channel=JavaTechie
+
+Code example:
+https://github.com/Java-Techie-jt/spring-security-jwt-example
+
+Motive:
+Stateless Authentication Management
+User state(or input) is never saved in server memory or cookies.
+(We don't need csrf in this case. It will work independently without any problem.)
+Even if I have multiple server, I just have to send JSON web token to authenticate.
+
+
+------------------------------------------------------steps------------------------------------------------------
+
+-----------------------------Step 1-----------------------------
+Dependencies> Lombok, web, security, h2, JPA, jjwt
+
+Add dependency for jwt:
+https://central.sonatype.com/artifact/io.jsonwebtoken/jjwt
+
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt</artifactId>
+    <version>0.9.1</version>
+</dependency>
+
+for WebSecurityConfigurerAdapter:
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-config</artifactId>
+</dependency>
+
+(don't need following two)
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version> <!-- Use the appropriate version -->
+</dependency>
+or
+<dependency>
+    <groupId>jakarta.servlet</groupId>
+    <artifactId>jakarta.servlet-api</artifactId>
+    <version>5.0.0</version> <!-- Use the appropriate Jakarta EE version -->
+    <scope>provided</scope>
+</dependency>
+
+code in web security configuration:
+
+@Autowired
+private UserService userService;
+
+@Override
+protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+    auth.userDetailsService(userService);
+}
+
+
+-----------------------------Step 2-----------------------------
+Make User (Entity, Repository, Service, Controller)
+
+----------------------------Step 3----------------------------
+create JwtUtil class:
+
+@Service
+public class JwtUtil {
+
+    private String secret = "javatechie";
+
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+    }
+
+    private Boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    public String generateToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, username);
+    }
+
+    private String createToken(Map<String, Object> claims, String subject) {
+        return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 24 * 60 * 60 * 10))
+                .signWith(SignatureAlgorithm.HS256, secret).compact();
+    }
+
+    public Boolean validateToken(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+}
+
+
+-----------------------step 4-------------------------
+In NewsController:
+
+@Autowired
+private JwtUtil jwtUtil;
+@Autowired
+private AuthenticationManager authenticationManager;
+
+@PostMapping("/authenticate")
+public String generateToken(@RequestBody User user) throws Exception {
+    try {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
+        );
+    } catch (Exception ex) {
+        throw new Exception("inavalid username/password");
+    }
+    return jwtUtil.generateToken(user.getUserName());
+}
+
+In WebSecurityConfiguration:
+@Bean(name = BeanIds.AUTHENTICATION_MANAGER)
+@Override
+public AuthenticationManager authenticationManagerBean() throws Exception {
+    return super.authenticationManagerBean();
+}
+
+---------------------------step 5---------------------------
+Now hit localhost:9080/api/v1/news/authenticate (post)
+with Request Body: {"userName":"editor","password":"editor"}
+and get jwt token.
+
+
+------------------------step 6----------------------------
+create filter>JwtFilter
+
+@Component
+public class JwtFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private UserService userService;
+
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
+
+        String authorizationHeader = httpServletRequest.getHeader("Authorization");
+
+        String token = null;
+        String userName = null;
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+            userName = jwtUtil.extractUsername(token);
+        }
+
+        if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            UserDetails userDetails = userService.loadUserByUsername(userName);
+
+            if (jwtUtil.validateToken(token, userDetails)) {
+
+                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                usernamePasswordAuthenticationToken
+                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
+                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+            }
+        }
+        filterChain.doFilter(httpServletRequest, httpServletResponse);
+    }
+}
+
+
+In WebSecurityConfiguration:
+
+@Autowired
+private JwtFilter jwtFilter;
+
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.csrf().disable().authorizeRequests().antMatchers("/authenticate")
+            .permitAll().anyRequest().authenticated()
+            .and().exceptionHandling().and().sessionManagement()
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+    http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+}
+
+Now create other requests on frontend like:
+self.login = function() {
+    // Send a POST request to authenticate and get the JWT token
+    $http.post('http://localhost:9080/api/v1/news/authenticate', {
+        userName: self.user.name,
+        password: self.user.password
+    }).then(function(response) {
+        // Assuming the JWT token is in the 'token' field of the response
+        var token = response.data.token;
+
+        // Store the token in local storage or a cookie for future use
+        // You should use a more secure way to store tokens in production
+
+        // Now, make the actual login request with the obtained token
+        $http.post('login', 'username=' + self.user.name + '&password=' + self.user.password, {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": "Bearer " + token  // Include the JWT token in the headers
+            }
+        }).then(self.loginSuccess, self.loginFailure);
+    }).catch(self.loginFailure);
+}
+

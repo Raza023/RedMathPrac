@@ -1,0 +1,66 @@
+https://www.awesomescreenshot.com/video/20944505?key=652ca6b4ebf0d1f373debf503fa5c8ac
+
+Step 1:
+Download stable version of nginx.
+
+Step 2:
+Go to D:\Mezino and RadMath\RedMath Prac\RedMathPrac\Session13 - nginx\nginx-1.24.0\conf\nginx.conf
+and paste following code there:
+
+worker_processes  1;
+events {
+    worker_connections 1024;
+}
+
+http {
+    server {
+        listen 8000;
+
+        server_name localhost;
+
+        location / {
+                proxy_pass http://localhost:3000/;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+        }
+
+        location /api/ {
+                proxy_pass http://localhost:8080/;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+        }
+        location /login {
+                proxy_pass http://localhost:8080/;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+        }
+        location /logout {
+                proxy_pass http://localhost:8080/;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+        }
+        location /login?logout {
+                proxy_pass http://localhost:8080/;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+        }
+
+    }
+}
+
+Step 3:
+To run nginx:
+cmd> D:\Mezino and RadMath\RedMath Prac\RedMathPrac\Session13 - nginx\nginx-1.24.0> .\nginx.exe
+
+Step 4:
+To stop nginx:
+cmd> D:\Mezino and RadMath\RedMath Prac\RedMathPrac\Session13 - nginx\nginx-1.24.0> nginx.exe -s stop
+
+Step 5:
+To list all tasks (processes) that match the image name "nginx.exe".
+cmd> D:\Mezino and RadMath\RedMath Prac\RedMathPrac\Session13 - nginx\nginx-1.24.0> tasklist /fi "imagename eq nginx.exe"
