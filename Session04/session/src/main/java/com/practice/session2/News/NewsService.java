@@ -58,7 +58,7 @@ public class NewsService {
 
     public List<News> findByTitleLike(String title) {
         logger.info("Our operator is: "+sqlLike);
-        logger.info("Title: "+title.replace("[\r\n]",""));    //log forgery.
+        logger.info("Title: "+title.replaceAll("[\r\n]",""));    //log forgery.
         List<News> newsList = newsRepository.findByTitleLike(sqlLike + title + sqlLike);
         return newsList; // If no matches are found, this will return an empty list
     }
